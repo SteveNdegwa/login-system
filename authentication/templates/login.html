@@ -8,6 +8,7 @@
     <title>Login</title>
 </head>
 <body>
+    <p class="error">{{error}}</p>
     <form action="/signin/" method="post">
         {% csrf_token %}
         <input type="text" name="credential" placeholder="Enter username or email" minlength=4>
