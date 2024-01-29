@@ -17,22 +17,29 @@ def signin(request):
                                password=request.POST['password']).exists() or User.objects.filter(
                 email=request.POST['credential'], password=request.POST['password']).exists():
             return render(request, 'home.html')
-        return HttpResponse("Invalid details")
+        return render(request, 'login.html', {'error': 'Invalid details'})
     return render(request, 'login.html')
 
 
 def signup(request):
     if request.method == "POST":
+        form = {
+            "username": request.POST['username'],
+            "email": request.POST['email'],
+            "pass1": request.POST['pass1'],
+            "pass2": request.POST['pass2'],
+        }
         if User.objects.filter(username=request.POST["username"]).exists():
-            return HttpResponse("username exists")
+            return render(request, 'signup.html', {"error":"Username exists", 'form_details':form})
         if User.objects.filter(email=request.POST["email"]).exists():
-            return HttpResponse("Email exists")
-        if not request.POST['pass1'] == request.POST['pass1']:
-            return HttpResponse("Passwords don't match")
+            return render(request, 'signup.html', {"error":"Email exists", 'form_details':form})
+        if not request.POST['pass1'] == request.POST['pass2']:
+            return render(request, 'signup.html', {"error":"Passwords don't match", 'form_details':form})
         new_user = User.objects.create(username=request.POST['username'], email=request.POST['email'],
                                        password=request.POST['pass1'])
         new_user.save()
-        return HttpResponse("Successful registration")
+        # redirect to login
+        return render(request, 'login.html')
     return render(request, 'signup.html')
 
 
