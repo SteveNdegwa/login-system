@@ -1,47 +1,71 @@
-from django.http import HttpResponse
-
-from django.shortcuts import render
+from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_protect
-from .models import User
+from django.contrib.auth.models import User
+from .forms import SigninForm, SignupForm
 
 
 # Create your views here.
 @csrf_protect
 def home(request):
-    return render(request, 'home.html')
+    if request.user.is_authenticated:
+        return render(request, 'authentication/home.html', {"name": request.user.username})
+    else:
+        return render(request, 'authentication/home.html')
 
 
 def signin(request):
+    # POST request
     if request.method == "POST":
-        if User.objects.filter(username=request.POST['credential'],
-                               password=request.POST['password']).exists() or User.objects.filter(
-                email=request.POST['credential'], password=request.POST['password']).exists():
-            return render(request, 'home.html')
-        return render(request, 'login.html', {'error': 'Invalid details'})
-    return render(request, 'login.html')
+        print(request.POST)
+        form = SigninForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user:
+                login(request, user)
+                return redirect("/")
+            else:
+                return render(request, 'authentication/signin.html', {'error': 'Incorrect username or password', 'form': form})
+        else:
+            return render(request, 'authentication/signin.html', {'error': 'Invalid details', 'form': form})
+
+    # GET request
+    else:
+        form = SigninForm()
+        return render(request, 'authentication/signin.html', {'form': form})
 
 
 def signup(request):
+    # POST request
     if request.method == "POST":
-        form = {
-            "username": request.POST['username'],
-            "email": request.POST['email'],
-            "pass1": request.POST['pass1'],
-            "pass2": request.POST['pass2'],
-        }
-        if User.objects.filter(username=request.POST["username"]).exists():
-            return render(request, 'signup.html', {"error":"Username exists", 'form_details':form})
-        if User.objects.filter(email=request.POST["email"]).exists():
-            return render(request, 'signup.html', {"error":"Email exists", 'form_details':form})
-        if not request.POST['pass1'] == request.POST['pass2']:
-            return render(request, 'signup.html', {"error":"Passwords don't match", 'form_details':form})
-        new_user = User.objects.create(username=request.POST['username'], email=request.POST['email'],
-                                       password=request.POST['pass1'])
-        new_user.save()
-        # redirect to login
-        return render(request, 'login.html')
-    return render(request, 'signup.html')
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
+            password = form.cleaned_data['password']
+            password2 = form.cleaned_data['password2']
+
+            if User.objects.filter(username=username).exists():
+                return render(request, 'authentication/signup.html', {"error": "Username exists", 'form': form})
+            if User.objects.filter(email=email).exists():
+                return render(request, 'authentication/signup.html', {"error": "Email exists", 'form': form})
+            if not password == password2:
+                return render(request, 'authentication/signup.html', {"error": "Passwords don't match", 'form': form})
+
+            new_user = User.objects.create(username=username, email=email, first_name=first_name, last_name=last_name, password=password)
+            new_user.save()
+            return redirect("/signin/")
+
+    # GET request
+    else:
+        form = SignupForm()
+        return render(request, 'authentication/signup.html', {'form': form})
 
 
 def signout(request):
-    return render(request, 'login.html')
+    logout(request)
+    return redirect("/signin/")
