@@ -1,0 +1,7 @@
+<p class="error">{{error}}</p>
+<form action="/signup/" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <button type="submit">Submit</button>
+</form>
+
